@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 from pogweb import WebApp, Request
 
 # Instantiate web app
-app = WebApp(cors=True)
+app = WebApp(cors=True, debug=True)
 
 # Flask-styled routes
 

@@ -32,9 +32,10 @@ class Redirect(object):
 
 
 class WebApp(object):
-    def __init__(self, *, cors=False) -> None:
+    def __init__(self, *, cors=False, debug=False) -> None:
         self.routes = {}
         self.cors = cors
+        self._debug = debug
         self._logger = logging.getLogger("pogweb")
         self._not_found = utils.handle_not_found
         self._renderer = Renderer("./html/")
@@ -175,8 +176,11 @@ class WebApp(object):
                 return self.handle_asset(environ, start_fn)
         except Exception:
             utils.log_request(self._logger, environ, 500)
+            error_log = traceback.format_exc()
             traceback.print_exc()
             start_fn("500 Internal Server Error", [("Content-Type", "text/plain")])
+            if self._debug:
+                return ["500 Internal Server Error\n\n" + error_log]
             return ["500 Internal Server Error"]
 
     def run(self, *, port=8080) -> None:
