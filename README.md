@@ -28,6 +28,25 @@ app.add_endpoint("/another-route", another_route)
 app.run(port=69)
 ```
 
+# Deploying/Using production servers
+
+By default, PogWeb runs a Waitress production server (because I was too lazy to write a development server or use Wekrzeug's one) but you can use your own servers by using
+
+```python
+if __name__ == "__name__":
+    app.run()
+```
+
+before `app.run()`. This will only run the server when you run the module itself. But if you import it from some other module that you might use as a wrapper for some other production server, that is possible too.
+
+For example, with gunicorn, you can run the web application like this:
+
+```sh
+$ gunicorn -w 4 main:app
+```
+
+Here, `main` (on the left side if the colon) is the name of the file (main.py) and `app` on the right side is the instance of the PogWeb application.
+
 # License
 
 Copyright 2021 K.M Ahnaf Zamil

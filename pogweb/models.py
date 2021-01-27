@@ -9,7 +9,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 """
 
-from pogweb.utils import Utils
+from urllib.parse import parse_qs
+
+
+import typing
+
+__all__: typing.Final = ["Request", "ImmutableDict"]
+
+
+class ImmutableDict(dict):
+    """An immutable dictionary implementation for query arguments and form data"""
+
+    def __setitem__(self, k, v) -> None:
+        raise ValueError("ImmutableDict object cannot be modified (immutable)")
 
 
 class Request(object):
@@ -19,16 +31,41 @@ class Request(object):
         self._environ = environ
 
     @property
-    def method(self):
+    def method(self) -> str:
+        """HTTP method used for the request"""
         return self._environ["REQUEST_METHOD"]
 
     @property
-    def endpoint(self):
+    def endpoint(self) -> str:
+        """The route/endpoint used for that specific request"""
         return self._environ["PATH_INFO"]
 
     @property
-    def query_args(self):
-        return Utils.parse_args(self._environ["QUERY_STRING"])
+    def query_args(self) -> ImmutableDict:
+        """Query arguments from the request"""
+        args = self._environ["QUERY_STRING"]
+        if not args:
+            return ImmutableDict({})
+        args = args.split("&")
+        query_args = {}
+        for _arg in args:
+            name, value = _arg.split("=")
+            query_args[name] = value
+
+        return ImmutableDict(query_args)
+
+    @property
+    def form(self) -> typing.Optional[typing.Dict]:
+        """Form data sent via HTTP request"""
+        data = self._environ.get("wsgi.input")
+        if data:
+            form_dict = parse_qs(data.getvalue().decode("utf-8"))
+
+            final_dict = {}
+
+            for k, v in form_dict.items():
+                final_dict[k] = v[0]  # Since v is list containing the form data
+            return ImmutableDict(final_dict)
 
     def __str__(self):
         return f'<Request endpoint="{self.endpoint}" method="{self.method}">'

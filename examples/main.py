@@ -9,10 +9,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 """
 
+# Run this file with `python main.py`
+
 from pogweb import WebApp, Request
 
 # Instantiate web app
-app = WebApp()
+app = WebApp(cors=True)
 
 # Flask-styled routes
 
@@ -20,29 +22,21 @@ app = WebApp()
 @app.endpoint("/")
 def main(request: Request):
     # Rendering HTML with data
-    return app.render_html("index.html", name="Ahnaf")
+    if request.method == "POST":
+        print(request.form)
+        return app.redirect_to("/redirected")
+    return app.render_html("index.html", name="Put your name here")
 
 
 @app.endpoint("/api")
 def api(request: Request):
     # Returning JSON
-    return {"status": 200, "msg": "Welcome to Pogweb API"}
+    return {"status": 200, "msg": "Pogweb API response from /api"}
 
 
-@app.endpoint("/search")
-def query(request: Request):
-    # Accessing query arguments
-    return f"<h1>You searched for {request.query_args['q']}</h1>"
-
-
-# Django styled routes
-
-
-def another_route(request: Request):
-    return "This is a django styled route"
-
-
-app.add_endpoint("/another-route", another_route)
+@app.endpoint("/redirected")
+def redirect_test(request: Request):
+    return "Redirect works"
 
 
 # Running the server (Waitress)

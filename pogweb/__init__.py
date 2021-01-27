@@ -10,8 +10,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 """
 
 from pogweb.application import WebApp
-from pogweb.models import Request
-from pogweb.utils import QueryArgs
+from pogweb.models import Request, ImmutableDict
 
 __author__ = "K.M Ahnaf Zamil"
 __version__ = "0.0.1-alpha"
