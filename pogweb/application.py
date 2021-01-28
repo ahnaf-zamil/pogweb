@@ -11,7 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 from waitress import serve
 from pogweb import utils
-from pogweb.models import Request
+from pogweb.models import Request, _Redirect, Endpoint
 from pogweb.renderer import Renderer
 from pogweb.errors import EndpointError
 
@@ -24,15 +24,10 @@ import traceback
 __all__: typing.Final = ["WebApp"]
 
 
-class Redirect(object):
-    """Just an object for simulating a redirect"""
+class BaseApp(object):
+    """Base class for all app/extension-like objects"""
 
-    def __init__(self, url: str) -> None:
-        self.url = url
-
-
-class WebApp(object):
-    def __init__(self, *, cors=False, debug=False) -> None:
+    def __init__(self, cors=False, debug=False) -> None:
         self.routes = {}
         self.cors = cors
         self._debug = debug
@@ -46,8 +41,9 @@ class WebApp(object):
         def decorator(func: typing.Callable):
             if route in self.routes:
                 raise EndpointError(f"The endpoint {route} already exists")
-            self.routes[route] = func
-            return func
+            endpoint = Endpoint(route, func)
+            self.routes[route] = endpoint
+            return endpoint
 
         return decorator
 
@@ -55,15 +51,16 @@ class WebApp(object):
         """Add an endpoint handler to the application (Non-decorator styled)"""
         if route in self.routes:
             raise EndpointError(f"The endpoint {route} already exists")
-        self.routes[route] = func
-        return func
+        endpoint = Endpoint(route, func)
+        self.routes[route] = endpoint
+        return endpoint
 
     def handle_request(self, environ, start_fn, endpoint) -> typing.List[str]:
         """Handles all HTML/JSON HTTP requests"""
         if not endpoint == utils.handle_not_found:
             request = Request(environ)
             data = endpoint(request)
-            if isinstance(data, Redirect):
+            if isinstance(data, _Redirect):
                 if not data.url.lower().startswith("http"):
                     url = f"{environ.get('wsgi.url_scheme', 'http')}://"
                     if environ.get("HTTP_HOST"):
@@ -133,10 +130,6 @@ class WebApp(object):
         data = renderer.render_html_file(file_name, kwargs)
         return data
 
-    def set_html_dir(self, work_dir: str) -> None:
-        """Changes the HTML file directory. The default is 'html/'"""
-        self._renderer = Renderer(work_dir + "/")
-
     def _handle_cors(self, environ, headers: list) -> typing.List[tuple]:
         """Private method for handling CORS if it's enabled."""
         if self.cors:
@@ -154,8 +147,24 @@ class WebApp(object):
         else:
             return headers
 
-    def redirect_to(self, url: str) -> Redirect:
-        return Redirect(url)
+    def redirect_to(self, url: str) -> _Redirect:
+        return _Redirect(url)
+
+
+class WebApp(BaseApp):
+    def __init__(self, *, cors=False, debug=False) -> None:
+        super().__init__(cors, debug)
+
+    def set_html_dir(self, work_dir: str) -> None:
+        """Changes the HTML file directory. The default is 'html/'"""
+        self._renderer = Renderer(work_dir + "/")
+
+    def load_extension(self, ext):
+        """Loads routes from extensions"""
+        for k, v in ext.routes.items():
+            if k in self.routes:
+                raise EndpointError(f"The endpoint {k} already exists")
+            self.routes[k] = v
 
     def __call__(self, environ, start_fn) -> typing.List[str]:
         """Called on EVERY single HTTP request"""

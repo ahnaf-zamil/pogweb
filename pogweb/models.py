@@ -14,7 +14,14 @@ from urllib.parse import parse_qs
 
 import typing
 
-__all__: typing.Final = ["Request", "ImmutableDict"]
+__all__: typing.Final = ["Request", "ImmutableDict", "_Redirect", "Endpoint"]
+
+
+class _Redirect(object):
+    """Just an object for simulating a redirect"""
+
+    def __init__(self, url: str) -> None:
+        self.url = url
 
 
 class ImmutableDict(dict):
@@ -57,7 +64,7 @@ class Request(object):
     @property
     def form(self) -> typing.Optional[typing.Dict]:
         """Form data sent via HTTP request"""
-        data = self._environ.get("wsgi.input")
+        data = self._environ.get("wsgi.input")  # Returns io.BytesIO object
         if data:
             form_dict = parse_qs(data.getvalue().decode("utf-8"))
 
@@ -69,3 +76,13 @@ class Request(object):
 
     def __str__(self):
         return f'<Request endpoint="{self.endpoint}" method="{self.method}">'
+
+
+class Endpoint(object):
+    def __init__(self, route, func) -> None:
+        self.route = route
+        self.extension = None
+        self._func = func
+
+    def __call__(self, request: Request):
+        return self._func(request)

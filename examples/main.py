@@ -12,9 +12,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 # Run this file with `python main.py`
 
 from pogweb import WebApp, Request
+from example_extension import my_extension
 
 # Instantiate web app
 app = WebApp(cors=True, debug=True)
+app.load_extension(my_extension)
 
 # Flask-styled routes
 
